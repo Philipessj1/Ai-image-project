@@ -18,6 +18,50 @@ const Home = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [allPosts, setAllPosts] = useState(null);
   const [searchText, setSearchText] = useState('');
+  const [searchedResults, setSearchedResults] = useState(null);
+  const [searchTimeout, setSearchTimeout] = useState(null);
+  
+
+  const fetchPosts = async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://dall-e-dsiv.onrender.com/api/v1/post', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        setAllPosts(result.data.reverse());
+      }
+    } catch (error) {
+      alert(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchPosts();
+  }, [])
+
+  const handleSearchChange = (e) => {
+    clearTimeout(searchTimeout);
+
+    setSearchText(e.target.value);
+
+    setSearchTimeout(
+      setTimeout(() => {
+        const searchResults = allPosts.filter((item) => item.name.toLowerCase().includes(searchText.toLowerCase()) || item.prompt.toLowerCase().includes(searchText.toLowerCase()));
+  
+        setSearchedResults(searchResults);
+      }, 500)
+    );
+  }
 
   return (
     <section className='max-w-7xl mx-auto'>
@@ -26,12 +70,19 @@ const Home = () => {
           Exibição da Comunidade
         </h1>
         <p className='mt-2 text-[#666e75] text-[14px] max-w-[500px]'>
-          Navegue por uma coleção de visualmente impressionantes geradas pela IA DALL-E.
+          Navegue por uma coleção de imagens visualmente impressionantes geradas pela IA DALL-E.
         </p>
       </div>
 
       <div className="mt-16">
-        <FormField />
+        <FormField 
+          labelName='Buscar posts'
+          type='text'
+          name='text'
+          placeholder='Buscar posts'
+          value={ searchText }
+          handleChange={ handleSearchChange }
+        />
       </div>
 
       <div className="mt-10">
@@ -50,12 +101,12 @@ const Home = () => {
               <div className="grid lg:grid-cols-4 sm:grid-cols-3 xs:grid-cols-2 grid-cols-1 gap-3">
                 { searchText ? (
                   <RenderCards 
-                    data={[]}
+                    data={ searchedResults }
                     title='Nenhum resultado de busca encontrado'
                   />
                 ) : (
                   <RenderCards 
-                  data={[]}
+                  data={ allPosts }
                   title='Nenhum post encontrado'
                 />
                 )}
@@ -65,7 +116,6 @@ const Home = () => {
         }
       </div>
     </section>
-    
   )
 }
 
